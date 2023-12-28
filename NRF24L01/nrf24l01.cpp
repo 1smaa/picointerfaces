@@ -49,7 +49,6 @@
 
 NRF24L01::NRF24L01::NRF24L01(int tx, int rx, int sck, int ce, int csn, int spi)
     : tx(tx), rx(rx), sck(sck), ce(ce), csn(csn), spi(spi) {};
-}
 
 void NRF24L01::NRF24L01::write_register(uchar addr,uchar value){
     gpio_put(this->csn,0); // power up
