@@ -48,14 +48,7 @@
 #define MASK_RX_DR_MASK 0x40
 
 NRF24L01::NRF24L01::NRF24L01(int tx, int rx, int sck, int ce, int csn, int spi)
-    : tx(tx), rx(rx), sck(sck), ce(ce), csn(csn), spi(spi) {}
-
-NRF24L01::Pipe& NRF24L01::NRF24L01::pipe(int i){
-    return this->pipes.at(i);
-}
-
-NRF24L01::Pipe NRF24L01::NRF24L01::pipe(int i) const{
-    return this->pipes.at(i);
+    : tx(tx), rx(rx), sck(sck), ce(ce), csn(csn), spi(spi) {};
 }
 
 void NRF24L01::NRF24L01::write_register(uchar addr,uchar value){
