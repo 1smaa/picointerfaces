@@ -1,12 +1,12 @@
 #include "nrf24l01.h"
-#define uint unsigned int
-#define uchar unsigned char
+using uint = unsigned int;
+using uchar = unsigned char;
 #define DEFAULT_RATE 4000000
 // registers needed for reading and writing registers
 #define R_REGISTER 0x0
 #define W_REGISTER 0x20
-#define R_RX_PAYLOAD 0x61
-#define W_TX_PAYLOAD 0xA0
+const uchar R_RX_PAYLOAD = 0x61;
+const uchar W_TX_PAYLOAD = 0xA0;
 #define FLUSH_TX 0xE0
 #define FLUSH_RX 0xE2
 #define REUSE_TX_PL 0xE3
@@ -47,14 +47,14 @@
 #define MASK_TX_DS_MASK 0x20
 #define MASK_RX_DR_MASK 0x40
 
-NRF24L01::NRF24L01::NRF24L01(int tx, int rx, int sck, int ce, int csn, int spi)
+NRF24L01::NRF24L01::NRF24L01(int tx, int rx, int sck, int ce, int csn, auto spi)
     : tx(tx), rx(rx), sck(sck), ce(ce), csn(csn), spi(spi) {};
 
 void NRF24L01::NRF24L01::write_register(uchar addr,uchar value){
     gpio_put(this->csn,0); // power up
     addr|=W_REGISTER; // create the instruction byte
-    spi_write_block(this->spi,&addr,1); // write instruction
-    spi_write_block(this->spi,&value,1); // write register value
+    spi_write_blocking(this->spi,&addr,1); // write instruction
+    spi_write_blocking(this->spi,&value,1); // write register value
     gpio_put(this->csn,1); // power down
 }
 
@@ -79,7 +79,6 @@ void NRF24L01::RX::setup(){
     gpio_set_dir(this->csn,GPIO_OUT);
     gpio_put(this->ce,0);
     gpio_put(this->csn,1);
-    this->write_register(RX_ADDR_P0,pipes[0].getAddr()); // set the address for pipe 0
     this->write_register(RF_CH,76); // set frequency to 76
     this->write_register(RF_SETUP,0x07); // set data rate to 1mbps
     this->write_register(EN_RXADDR, 0x01); // activate pipe 0
@@ -129,7 +128,7 @@ void NRF24L01::TX::setup(){
 void NRF24L01::TX::send(const uchar* buffer){
     gpio_put(this->csn,0); // select the module
     spi_write_blocking(this->spi,&W_TX_PAYLOAD,1); // write tx payload instruction
-    spi_write_blocking(this->spi,&buffer,32); // write payload with 32 bytes length
+    spi_write_blocking(this->spi,buffer,32); // write payload with 32 bytes length
     gpio_put(this->ce,1); // pulse ce pin to send
     sleep_ms(10);
     gpio_put(this->ce,0);
@@ -144,6 +143,6 @@ uint NRF24L01::RX::get_addr(uchar pipe_addr){
     return this->read_register(pipe_addr);
 }
 
-void NRF24L01::TX::set_tx_addr(int addr){
+void NRF24L01::TX::set_tx_addr(uint addr){
     this->write_register(TX_ADDR,addr);
 }
