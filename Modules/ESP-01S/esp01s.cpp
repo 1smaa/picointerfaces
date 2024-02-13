@@ -8,7 +8,6 @@
 #define LOW 0
 #define DEFAULT_PASSWORD esp01sPico
 
-#include <chrono>
 
 std::string ESP01S::ESP01S::command(const std::string& command) {
     // Send command
@@ -41,7 +40,7 @@ void ESP01S::ESP01S::setup(){
     sleep_ms(100);
     this->command("AT+UART_CUR=115200,8,1,0,0\r\n");
     this->command("ATE1\r\n");
-    this->command("AT+CWQAP\r\n");
+    //this->command("AT+CWQAP\r\n");
     //this->command("AT+RFPOWER=82\r\n");
 }
 
@@ -84,12 +83,12 @@ ESP01S::ESP01S::~ESP01S(){
 }
 
 bool ESP01S::SoftAP::set_softap(){
-    this->command("AT+CWDHCP_CUR=1,1\r\n");
     return this->command("AT+CWMODE_CUR=2\r\n").find("ERROR")==std::string::npos;
 };
 
-std::string ESP01S::SoftAP::configure_softap(std::string ssid,std::string password,int channel,int security){
-    return this->command("AT+CWSAP=\""+ssid+"\",\""+password+"\","+std::to_string(channel)+","+std::to_string(security)+"\r\n");
+std::string ESP01S::SoftAP::configure_softap(std::string ssid,std::string password,int security){
+    this->command("AT+CIPAP_CUR=\"192.168.1.100\"\r\n");
+    return this->command("AT+CWSAP=\""+ssid+"\",\""+password+"\",0,"+std::to_string(security)+"\r\n");
 };
 
 bool ESP01S::SoftAP::start_tcp(int port){
@@ -98,35 +97,30 @@ bool ESP01S::SoftAP::start_tcp(int port){
 };
 
 bool ESP01S::Station::set_station(){
+    this->command("AT+CIPMUX=0\r\n");
     return this->command("AT+CWMODE_CUR=1\r\n").find("ERROR")==std::string::npos;
 };
 
 bool ESP01S::Station::establish_tcp(int port){
-    std::string r=this->command("AT+CIFSR\r\n");
-    size_t pos=r.find("SoftAPIP");
-    if(pos==std::string::npos) return false;
-    pos+=10;
-    size_t end=r.find("\"",pos);
-    std::string ip=r.substr(pos,end-pos);
-    return this->command("AT+CIPSTART=0,\"TCP\",\""+ip+"\","+std::to_string(port)+"\r\n").find("ERROR")==std::string::npos;
+    return this->command("AT+CIPSTART=\"TCP\",\"192.168.1.100\","+std::to_string(port)+"\r\n").find("ERROR")==std::string::npos;
 };
 
 bool ESP01S::ESP01S::send(std::string s){
     this->command("AT+CIPSENDEX="+std::to_string(s.length())+"\r\n");
-    sleep_ms(50);
-    return this->command(s+"\\0\r\n").find("SEND OK")!=std::string::npos;
+    sleep_ms(500);
+    return this->command(s).find("SEND OK")!=std::string::npos;
 };
 
 bool ESP01S::SoftAP::send(std::string s){
-    this->command("AT+CIPSENDEX=0,"+std::to_string(s.length())+"\r\n");
-    sleep_ms(50);
-    return this->command(s+"\\0\r\n").find("SEND OK")!=std::string::npos;
+    this->command("AT+CIPSENDEX=0,"+std::to_string(s.length()+2)+"\r\n");
+    sleep_ms(1000);
+    return this->command(s+"\0").find("SEND OK")!=std::string::npos;
 }
 
-std::string ESP01S::ESP01S::receive(){
-    std::string output="";
-    while(uart_is_readable(this->uartID)){
-        output+=uart_getc(this->uartID);
-    }
-    return output.find("+IPD")!=std::string::npos ? output : "";
+std::string ESP01S::ESP01S::receive(int length){
+    return this->command("+IPD,"+std::to_string(length)+"\r\n");
 };
+
+std::string ESP01S::SoftAP::receive(int length){
+    return this->command("+IPD,0,"+std::to_string(length)+"\r\n");
+}

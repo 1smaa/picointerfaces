@@ -64,16 +64,17 @@ namespace ESP01S{
         void setup();
         void reset(int pin);
         bool send(std::string s);
-        std::string receive();
+        std::string receive(int length);
         ~ESP01S();
     };
     class SoftAP : public ESP01S{
     public:
         SoftAP(uart_inst_t* id,int tx,int rx) : ESP01S(id,tx,rx){};
         bool set_softap();
-        std::string configure_softap(std::string ssid,std::string pwd,int channel,int encryption);
+        std::string configure_softap(std::string ssid,std::string pwd,int encryption);
         bool start_tcp(int port);
         bool send(std::string s);
+        std::string receive(int length);
     };
     class Station : public ESP01S{
     public:
